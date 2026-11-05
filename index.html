@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">\n<meta name="apple-mobile-web-app-capable" content="yes">\n<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">\n<meta name="apple-mobile-web-app-title" content="SHOT LAB">\n<link rel="manifest" href="manifest.webmanifest">\n<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="theme-color" content="#101827">
+<title>MONST SHOT LAB</title>
+<style>
+:root{color-scheme:dark;--bg:#101827;--panel:#1b2638;--line:#334155;--text:#f8fafc;--muted:#a8b4c5;--accent:#62d6a5}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans",sans-serif}
+main{max-width:760px;margin:auto;padding:16px 14px 32px}
+header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+h1{font-size:20px;letter-spacing:.08em;margin:0} .tag{font-size:11px;color:#101827;background:var(--accent);padding:5px 8px;border-radius:99px;font-weight:700}
+p{color:var(--muted);font-size:13px;line-height:1.55;margin:7px 0 14px}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:13px;margin:12px 0}
+button,.filebtn,select{background:#26364c;color:var(--text);border:1px solid #43536a;border-radius:10px;padding:10px 12px;font-size:14px}
+button:active,.filebtn:active{transform:scale(.98)}
+.filebtn{display:block;text-align:center;font-weight:650;border-style:dashed}
+input[type=file]{display:none}
+.stage{position:relative;width:100%;background:#080e18;border-radius:12px;overflow:hidden;min-height:230px;touch-action:manipulation}
+canvas{display:block;width:100%;height:auto;min-height:230px;object-fit:contain}
+.row{display:flex;gap:9px;align-items:center;flex-wrap:wrap}.row>*{flex:1}
+label{font-size:13px;color:#dce5f1;display:block;margin-bottom:7px}
+select{width:100%}
+input[type=range]{width:100%;accent-color:var(--accent)}
+.value{font-variant-numeric:tabular-nums;color:var(--accent);font-weight:700}
+.small{font-size:11px;color:var(--muted)}
+.legend{display:flex;gap:12px;flex-wrap:wrap;font-size:11px;color:var(--muted);margin-top:9px}
+.dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:5px}
+button.primary{background:var(--accent);color:#0b1720;border:0;font-weight:750}
+button:disabled{opacity:.45}
+</style>
+</head>
+<body>
+<main>
+<header><h1>MONST SHOT LAB</h1><span class="tag">iPhone prototype</span></header>
+<p>スクショを読み込み、盤面をタップして発射位置を指定。角度を動かして軌道を確認できます。</p>
+<section class="panel">
+<label class="filebtn" for="upload">＋ 写真フォルダからスクショを選ぶ</label>
+<input id="upload" type="file" accept="image/*">
+<div id="status" class="small" style="margin-top:8px">画像は端末内だけで処理します。外部送信しません。</div>
+</section>
+<section class="panel">
+<div class="stage"><canvas id="board" width="900" height="1200"></canvas></div>
+<div class="legend"><span><i class="dot" style="background:#ffd166"></i>予測軌道</span><span><i class="dot" style="background:#62d6a5"></i>反射後</span><span><i class="dot" style="background:#fff"></i>発射位置</span></div>
+<div class="small" style="margin-top:8px">盤面をタップすると発射位置を変更できます。</div>
+</section>
+<section class="panel">
+<div class="row">
+<div><label for="kind">ショットタイプ</label><select id="kind"><option value="reflect">反射</option><option value="pierce">貫通</option></select></div>
+<div><label for="bounces">壁反射回数（目安）</label><select id="bounces"><option>0</option><option>1</option><option selected>2</option><option>3</option><option>4</option><option>5</option></select></div>
+</div>
+<div style="margin-top:16px">
+<label>発射角度 <span class="value" id="angleText">35°</span></label>
+<input id="angle" type="range" min="0" max="359" value="35">
+<div class="row small"><span>0° →</span><span style="text-align:right">359° ↻</span></div>
+</div>
+<div class="row" style="margin-top:14px">
+<button id="rotateLeft">− 5°</button><button id="rotateRight">＋ 5°</button><button class="primary" id="reset">位置リセット</button>
+</div>
+</section>
+<section class="panel">
+<strong style="font-size:14px">使い方・対応状況</strong>
+<p style="margin-bottom:0">スクショを読み込んだら、画像上のキャラ位置をタップして発射位置を指定してください。現在の軌道は、画面端を壁とみなした幾何学的な目安です。敵・味方の当たり判定、ブロック、重力、速度変化、友情コンボ、実際のゲーム内ショット仕様はまだ解析していません。正確な攻略ルートではなく、操作感を確認するための第1段階です。</p>
+</section>
+</main>
+<script>
+const c=document.getElementById('board'),ctx=c.getContext('2d');
+const upload=document.getElementById('upload'),angle=document.getElementById('angle'),kind=document.getElementById('kind'),bounces=document.getElementById('bounces');
+let img=null, start={x:450,y:900};
+function draw(){
+ const W=c.width,H=c.height;
+ ctx.clearRect(0,0,W,H);
+ if(img){let s=Math.min(W/img.width,H/img.height);let w=img.width*s,h=img.height*s;ctx.drawImage(img,(W-w)/2,(H-h)/2,w,h);}
+ else{
+  ctx.fillStyle='#111d2d';ctx.fillRect(0,0,W,H);
+  ctx.strokeStyle='#27374b';ctx.lineWidth=2;
+  for(let x=0;x<W;x+=75){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke()}
+  for(let y=0;y<H;y+=75){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke()}
+  ctx.fillStyle='#dce5f1';ctx.textAlign='center';ctx.font='bold 34px sans-serif';ctx.fillText('スクショを読み込んでください',W/2,H/2-15);
+  ctx.font='22px sans-serif';ctx.fillStyle='#91a4bb';ctx.fillText('または盤面をタップして軌道を試す',W/2,H/2+30);
+ }
+ // playfield inset to avoid drawing into outer border
+ const bounds={l:18,r:W-18,t:18,b:H-18};
+ ctx.save();ctx.beginPath();ctx.rect(bounds.l,bounds.t,bounds.r-bounds.l,bounds.b-bounds.t);ctx.clip();
+ const a=Number(angle.value)*Math.PI/180; let dx=Math.cos(a),dy=-Math.sin(a);
+ let x=start.x,y=start.y,remaining=2600,hit=0,pts=[{x,y}];
+ while(remaining>0 && pts.length<12){
+  let tx=dx>0?(bounds.r-x)/dx:dx<0?(bounds.l-x)/dx:Infinity;
+  let ty=dy>0?(bounds.b-y)/dy:dy<0?(bounds.t-y)/dy:Infinity;
+  let t=Math.min(tx>0?tx:Infinity,ty>0?ty:Infinity,remaining);
+  if(!isFinite(t))break;
+  x+=dx*t;y+=dy*t;remaining-=t;pts.push({x,y});
+  if(remaining<=0)break;
+  if(kind.value==='pierce')break;
+  hit++;
+  if(hit>Number(bounces.value))break;
+  if(Math.abs(t-tx)<1)dx*=-1;
+  if(Math.abs(t-ty)<1)dy*=-1;
+ }
+ // path segments
+ ctx.lineWidth=8;ctx.lineCap='round';ctx.lineJoin='round';
+ for(let i=1;i<pts.length;i++){ctx.strokeStyle=i===1?'#ffd166':'#62d6a5';ctx.beginPath();ctx.moveTo(pts[i-1].x,pts[i-1].y);ctx.lineTo(pts[i].x,pts[i].y);ctx.stroke()}
+ pts.slice(1).forEach((p,i)=>{ctx.fillStyle='#62d6a5';ctx.beginPath();ctx.arc(p.x,p.y,10,0,Math.PI*2);ctx.fill();ctx.fillStyle='#0c1725';ctx.font='bold 13px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(String(i+1),p.x,p.y)});
+ ctx.restore();
+ ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(start.x,start.y,17,0,Math.PI*2);ctx.fill();ctx.strokeStyle='#172334';ctx.lineWidth=5;ctx.stroke();
+ ctx.fillStyle='#172334';ctx.font='bold 18px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('S',start.x,start.y);
+ document.getElementById('angleText').textContent=angle.value+'°';
+}
+upload.addEventListener('change',async e=>{
+ const f=e.target.files && e.target.files[0]; if(!f)return;
+ const status=document.getElementById('status');
+ status.textContent='画像を読み込んでいます…';
+ try{
+   let decoded=null;
+   if('createImageBitmap' in window){try{decoded=await createImageBitmap(f)}catch(err){}}
+   if(decoded){img=decoded;draw();status.textContent='読み込み完了：'+f.name;}
+   else{
+     const u=URL.createObjectURL(f); const im=new Image();
+     im.onload=()=>{img=im;draw();URL.revokeObjectURL(u);status.textContent='読み込み完了：'+f.name;};
+     im.onerror=()=>{URL.revokeObjectURL(u);status.textContent='この画像形式はこの開き方では読めません。写真アプリからJPEG形式で書き出して再度お試しください。';};
+     im.src=u;
+   }
+ }catch(err){status.textContent='読み込みに失敗しました。別の画像でお試しください。';}
+});
+function canvasPoint(e){const r=c.getBoundingClientRect();return{x:(e.clientX-r.left)*c.width/r.width,y:(e.clientY-r.top)*c.height/r.height}}
+c.addEventListener('pointerdown',e=>{const p=canvasPoint(e);start={x:Math.max(18,Math.min(c.width-18,p.x)),y:Math.max(18,Math.min(c.height-18,p.y))};draw()});
+angle.addEventListener('input',draw);kind.addEventListener('change',draw);bounces.addEventListener('change',draw);
+document.getElementById('rotateLeft').onclick=()=>{angle.value=(Number(angle.value)+354)%360;draw()};
+document.getElementById('rotateRight').onclick=()=>{angle.value=(Number(angle.value)+5)%360;draw()};
+document.getElementById('reset').onclick=()=>{start={x:450,y:900};draw()};
+draw();
+</script>
+<script>if ("serviceWorker" in navigator) { window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js").catch(() => {})); }</script>\n</body></html>
