@@ -77,7 +77,7 @@ select, button { max-width:100%; min-width:0; }
 <section class="panel">
 <div class="row">
 <div><label for="kind">ショットタイプ</label><select id="kind"><option value="reflect">反射</option><option value="pierce">貫通</option></select></div>
-<div><label for="bounces">壁反射回数（目安）</label><select id="bounces"><option>0</option><option>1</option><option selected>2</option><option>3</option><option>4</option><option>5</option></select></div>
+<div><label for="bounces">壁反射回数（目安）</label><select id="bounces"><option>0</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option><option>8</option><option>9</option><option value="10" selected>10</option></select></div>
 </div>
 <div style="margin-top:16px">
 <label>発射角度 <span class="value" id="angleText">35°</span></label>
@@ -90,7 +90,7 @@ select, button { max-width:100%; min-width:0; }
 </section>
 <section class="panel">
 <strong style="font-size:14px">使い方・対応状況</strong>
-<p style="margin-bottom:0">スクショを読み込んだら、画像上のキャラ位置をタップして発射位置を指定してください。現在の軌道は、画面端を壁とみなした幾何学的な目安です。敵・味方の当たり判定、ブロック、重力、速度変化、友情コンボ、実際のゲーム内ショット仕様はまだ解析していません。正確な攻略ルートではなく、操作感を確認するための第1段階です。</p>
+<p style="margin-bottom:0">スクショを読み込んだら、画像上のキャラ位置をタップして発射位置を指定してください。反射回数は最大10回まで設定できます。現在の軌道は、盤面端を壁とみなした幾何学的な目安です。敵・味方の当たり判定、ブロック、重力、速度変化、友情コンボ、実際のゲーム内ショット仕様はまだ解析していません。正確な攻略ルートではなく、操作感を確認するための第1段階です。</p>
 </section>
 </main>
 <script>
@@ -99,7 +99,7 @@ const upload=document.getElementById('upload'),angle=document.getElementById('an
 let img=null, start={x:450,y:760}, imageRect={l:0,r:900,t:0,b:1200}, playBounds={l:18,r:882,t:18,b:1182};
 
 // モンストの縦長スクショでは、画像全体ではなく中央のバトル盤面だけを壁として扱う。
-// 上部の背景・ステータス領域と、下部のHP/キャラ欄を軌道範囲から除外。
+// 上部の背景・ステータス領域と、下部のHP/キャラ欄を軌道範囲から除外。縦長画像では盤面の上下を少し内側に設定。
 function updateBounds(){
   if(!img){
     playBounds={l:18,r:c.width-18,t:18,b:c.height-18};
@@ -113,8 +113,8 @@ function updateBounds(){
       // 余白を差し引くと盤面幅より狭くなったり、線の座標がずれるため固定マージンは設けない。
       l:imageRect.l,
       r:imageRect.r,
-      t:imageRect.t+ih*0.09,
-      b:imageRect.t+ih*0.71
+      t:imageRect.t+ih*0.13,
+      b:imageRect.t+ih*0.68
     };
   } else {
     playBounds={l:imageRect.l,r:imageRect.r,t:imageRect.t+ih*0.04,b:imageRect.b-ih*0.04};
