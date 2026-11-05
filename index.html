@@ -2,7 +2,12 @@
 <html lang="ja">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">\n<meta name="apple-mobile-web-app-capable" content="yes">\n<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">\n<meta name="apple-mobile-web-app-title" content="SHOT LAB">\n<link rel="manifest" href="manifest.webmanifest">\n<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="SHOT LAB">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-192.png">
 <meta name="theme-color" content="#101827">
 <title>MONST SHOT LAB</title>
 <style>
@@ -29,6 +34,30 @@ input[type=range]{width:100%;accent-color:var(--accent)}
 .dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:5px}
 button.primary{background:var(--accent);color:#0b1720;border:0;font-weight:750}
 button:disabled{opacity:.45}
+
+/* iPhone / narrow-screen layout */
+html, body { width:100%; max-width:100%; overflow-x:hidden; }
+main { width:100%; min-width:0; }
+.panel, .stage, canvas { max-width:100%; }
+.row { min-width:0; }
+.row > * { min-width:0; }
+select, button { max-width:100%; min-width:0; }
+@media (max-width: 600px) {
+  main { padding: max(10px, env(safe-area-inset-top)) 10px calc(22px + env(safe-area-inset-bottom)); }
+  header { gap:8px; margin-bottom:8px; }
+  h1 { font-size:clamp(16px, 4.6vw, 20px); letter-spacing:.04em; }
+  .tag { font-size:10px; white-space:nowrap; }
+  p { font-size:12px; margin:6px 0 10px; }
+  .panel { padding:10px; margin:9px 0; border-radius:13px; }
+  .stage { width:100%; min-height:180px; }
+  canvas { display:block; width:100%; height:auto; min-height:180px; }
+  .row { gap:7px; }
+  .row > * { flex:1 1 0; }
+  button, .filebtn, select { padding:9px 8px; font-size:13px; }
+  label { font-size:12px; margin-bottom:5px; }
+  .legend { gap:8px; font-size:10px; }
+  .small { font-size:10px; }
+}
 </style>
 </head>
 <body>
